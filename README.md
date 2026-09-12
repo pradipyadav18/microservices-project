@@ -1,101 +1,101 @@
-# 🚀 Spring Boot Microservices Ecosystem
+# 🚀 Enterprise Spring Boot Microservices Ecosystem
 
-A robust, scalable microservices architecture built with **Spring Boot 3**, **Spring Cloud Gateway**, **Netflix Eureka**, and **OpenFeign**, featuring centralized exception handling and Resilience4j circuit breaker fallback mechanics.
+A robust, production-ready Microservices Architecture built using **Spring Boot 3**, **Spring Cloud**, **Resilience4j**, and **JWT Authentication**. This project demonstrates end-to-end distributed system capabilities, including service registry, reactive API routing, automated circuit breaking, and secure inter-service communication.
 
 ---
 
 ## 🛠️ Tech Stack & Dependencies
 
-| Tool / Framework | Purpose |
-| :--- | :--- |
-| **Java 21** | Core Programming Language |
-| **Spring Boot 3.2.5** | Microservice Framework |
-| **Spring Cloud Gateway** | API Gateway & Reactive Routing (WebFlux) |
-| **Netflix Eureka** | Service Registry & Discovery |
-| **OpenFeign** | Declarative REST Client (Inter-service Communication) |
-| **Resilience4j** | Circuit Breaker & Fallback Mechanisms |
-| **Jackson / Lombok** | JSON Serialization & Boilerplate reduction |
+* **Language & Framework**: Java 17/21, Spring Boot 3.2.5
+* **Cloud Infrastructure**: Spring Cloud Gateway 4.1.2, Netflix Eureka Server
+* **Security**: JWT (JSON Web Tokens), Spring Security
+* **Fault Tolerance**: Resilience4j (Circuit Breaker & TimeLimiter)
+* **Inter-Service Communication**: OpenFeign, WebClient
+* **Database & Persistence**: MySQL, Spring Data JPA, Hibernate
+* **Tools & Build**: Maven, Postman, Git
 
 ---
 
 ## 🏗️ System Architecture
 
 
-+-------------------+
-                  |   Client Request  |
-                  +---------+---------+
-                            |
-                            v
-                 +---------------------+
-                 |  API Gateway (9090) |
-                 +----------+----------+
-                            |
-        +-------------------+-------------------+
-        |                                       |
-        v                                       v
-+------------------+                    +------------------+
-| Employee Service | <--- OpenFeign --- |  Address Service |
-+--------+---------+                    +--------+---------+
-|                                       |
-+-------------------+-------------------+
++-----------------------+
+                              |    Service Registry   |
+                              |    (Eureka Server)    |
+                              +-----------+-----------+
+                                          ^
+                                          | (Registration)
+                                          v
++------------------+             +------------+------------+             +--------------------+
+|   Client / UI    | ----------> |    Spring Cloud Gateway    | ----------> |    Auth Service    |
++------------------+             |    (Port: 9090 / JWT)    |             |    (Port: 8088)    |
++------------+------------+             +--------------------+
 |
+| (Routed Requests)
 v
-+--------------------+
-|   Eureka Server    |
-+--------------------+
++------------+------------+
+|    Employee Service     |
+|      (Port: 8080)       |
++------------+------------+
+|
+| (Feign Client / REST)
+v
++------------+------------+
+|     Address Service     |
+|      (Port: 8081)       |
++-------------------------+
+
+
 
 
 ---
 
-## 🧩 Microservices Breakdown
-
-### 1. 🌐 API Gateway (`Port: 9090`)
-* Acts as the single entry point for all client requests.
-* Implements dynamic route mapping and reactive non-blocking execution using Spring WebFlux.
-* Configured with **Fallback Endpoints** for graceful service failure degrade.
-
-### 2. 🔍 Service Registry (Eureka Server)
-* Maintains dynamic registry of active microservice instances.
-* Enables load balancing and automatic service discovery without hardcoded IPs.
-
-### 3. 🏢 Address Service
-* Handles address management and invokes `Employee Service` via **OpenFeign**.
-* Integrates `CustomErrorDecoder` and `GlobalExceptionHandler` to translate downstream failures into clean status responses.
-
-### 4. 👨‍💻 Employee Service
-* Manages core employee records and exposes internal endpoints consumed by other microservices.
-
----
-
-## ⚡ Key Features & Resilience Strategy
-
-* **Inter-Service Error Decoding (`CustomErrorDecoder`):** Automatically intercepts Feign client errors (500/503/service down) and formats them into custom domain exceptions instead of raw stack traces.
-* **Global Exception Management:** Centralized `@RestControllerAdvice` ensures standardized JSON responses across all HTTP errors.
-* **Circuit Breaker Fallbacks:** Integrated Resilience4j fallback mappings at Gateway and Service levels.
-
----
-
-## 📌 Services & Port Mapping
+## 📦 Services Breakdown
 
 | Service Name | Port | Description |
 | :--- | :--- | :--- |
-| **Eureka Server** | `8761` | Discovery Registry |
-| **API Gateway** | `9090` | Routing & Central Gateway |
-| **Address Service** | Dynamic / Configured | Address Domain API |
-| **Employee Service**| Dynamic / Configured | Employee Domain API |
+| **Service Registry** | `8761` | Eureka Server for dynamic service discovery and heartbeat monitoring. |
+| **Auth Service** | `8088` | Handles user authentication, password hashing, and JWT token issuance. |
+| **API Gateway** | `9090` | Unified entry point with JWT validation, dynamic routing, and Resilience4j logic. |
+| **Employee Service** | `8080` | Manages core employee domain data and communicates with Address Service. |
+| **Address Service** | `8081` | Manages location details linked to employees (PERMANENT, TEMPORARY). |
 
 ---
 
-## 🚦 Getting Started
+## ✨ Key Technical Highlights
+
+* **Centralized API Security**: Requests pass through the API Gateway, where JWT tokens are validated before reaching downstream services.
+* **Resilience4j Circuit Breaker & Timeout**:
+  * Configured via `ReactiveResilience4JCircuitBreakerFactory`.
+  * Enforces a strict **5-second timeout** limit per downstream call.
+  * Gracefully redirects long-running or failed requests to a fallback endpoint (`503 Service Unavailable`).
+* **Declarative REST Client**: Uses **OpenFeign** for seamless synchronous calls between `Employee-Service` and `Address-Service`.
+* **Database & Entity Mapping**: One-to-Many mapping for aggregated DTO responses (Employee details with nested Address list).
+
+---
+
+## ⚡ Setup & Execution Guide
 
 ### Prerequisites
-* **Java 21** installed
-* **Maven 3.8+** installed
+1. Installed **JDK 17** or higher.
+2. **Maven 3.8+** installed.
+3. Database (MySQL/PostgreSQL) active on local instance.
 
-### Execution Order
-Services **must** be launched in the following sequence to allow proper registration:
+### Running the Ecosystem
+Start the microservices in the exact order below to ensure correct registration:
 
-1. **Start Eureka Server**
-   ```bash
-   cd eureka-server
-   mvn spring-boot:run
+```bash
+# 1. Start Eureka Registry
+cd service-registry && mvn spring-boot:run
+
+# 2. Start Auth Service
+cd auth-service && mvn spring-boot:run
+
+# 3. Start Address Service
+cd address-service && mvn spring-boot:run
+
+# 4. Start Employee Service
+cd employee-service && mvn spring-boot:run
+
+# 5. Start API Gateway
+cd api-gateway && mvn spring-boot:run
